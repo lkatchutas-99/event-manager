@@ -12,8 +12,8 @@ end
 def clean_phone_numbers?(phone_number)
   return false if phone_number.nil?
 
-  correct_number_length = number_starts_with_one?(phone_number) ? 11 : 10
-  phone_number.length.eql?(correct_number_length)
+  phone_number.insert(0, '0') unless number_starts_with_one?(phone_number)
+  phone_number.length.eql?(11)
 end
 
 def number_starts_with_one?(phone_number)
@@ -21,7 +21,7 @@ def number_starts_with_one?(phone_number)
 end
 
 def build_phone_number(phone_number)
-  "#{'1 ' if number_starts_with_one?(phone_number)}(#{phone_number[0..2]}) #{phone_number[3..5]} #{phone_number[6..9]}"
+  "#{'1 ' if number_starts_with_one?(phone_number)}(#{phone_number[1..3]}) #{phone_number[4..6]} #{phone_number[7..10]}"
 end
 
 def time_targeting(date_and_time)
