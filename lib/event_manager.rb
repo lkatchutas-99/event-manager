@@ -4,21 +4,24 @@ require 'csv'
 require 'google/apis/civicinfo_v2'
 require 'erb'
 require 'time'
-require 'pry-byebug'
 
 def clean_zipcode(zipcode)
   zipcode.to_s.rjust(5, '0')[0..4]
 end
 
 def clean_phone_numbers?(phone_number)
-  return error_number_prompt if phone_number.nil?
+  return false if phone_number.nil?
 
-  phone_number.slice(0) if phone_number.start_with?('1')
-  phone_number.length.eql?(10)
+  correct_number_length = number_starts_with_one?(phone_number) ? 11 : 10
+  phone_number.length.eql?(correct_number_length)
+end
+
+def number_starts_with_one?(phone_number)
+  phone_number.start_with?('1') && phone_number.length.eql?(11)
 end
 
 def build_phone_number(phone_number)
-  "(#{phone_number[0..2]}) #{phone_number[3..5]} #{phone_number[6..9]}"
+  "#{'1 ' if number_starts_with_one?(phone_number)}(#{phone_number[0..2]}) #{phone_number[3..5]} #{phone_number[6..9]}"
 end
 
 def time_targeting(date_and_time)
