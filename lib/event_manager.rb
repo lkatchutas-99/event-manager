@@ -3,7 +3,6 @@
 require 'csv'
 require 'google/apis/civicinfo_v2'
 require 'erb'
-require 'date'
 require 'time'
 require 'pry-byebug'
 
@@ -34,10 +33,9 @@ def day_of_week_targeting(date_and_time)
 end
 
 def hash_frequency(date_and_time, date_of_week: false)
-  date_and_time.reduce(Hash.new(0)) do |hash, row|
+  date_and_time.each_with_object(Hash.new(0)) do |row, hash|
     date = DateTime.strptime(row, '%m/%d/%Y %H:%M')
     hash[(date_of_week ? date.strftime('%A') : date.hour)] += 1
-    hash
   end
 end
 
@@ -45,29 +43,31 @@ def legislators_by_zipcode(zip)
   civic_info = Google::Apis::CivicinfoV2::CivicInfoService.new
   civic_info.key = 'AIzaSyClRzDqDh5MsXwnCWi0kOiiBivP6JsSyBw'
   begin
-    legislators = civic_info.representative_info_by_address(
-      address: zip,
-      levels: 'country',
-      roles: %w(legislatorUpperBody legislatorLowerBody)
-    ).officials    
-  rescue
+    civic_info_officials(civic_info, zip)
+  rescue StandardError
     'You can find your representatives by visiting www.commoncause.org/take-action/find-elected-officials'
   end
 end
 
+def civic_info_officials(civic_info, zip)
+  civic_info.representative_info_by_address(
+    address: zip,
+    levels: 'country',
+    roles: %w[legislatorUpperBody legislatorLowerBody]
+  ).officials
+end
+
 def add_file(file_name, working_file)
-  begin
-    Dir.mkdir('output') unless Dir.exist?('output')
-    filename = "output/#{file_name}"
-    File.open(filename, 'w') { |file| file.puts working_file }
-    puts "#{file_name} was successfully created"
-  rescue
-    puts "Error: #{file_name} could not be created"
-  end
+  Dir.mkdir('output') unless Dir.exist?('output')
+  filename = "output/#{file_name}"
+  File.open(filename, 'w') { |file| file.puts working_file }
+  puts "#{file_name} was successfully created"
+rescue StandardError
+  puts "Error: #{file_name} could not be created"
 end
 
 contents = CSV.open(
-  'event_attendees.csv', 
+  'event_attendees.csv',
   headers: true,
   header_converters: :symbol
 )
@@ -90,7 +90,7 @@ contents.each do |row|
   phone_number = row[:homephone].scan(/\d/).join
 
   date_and_time.push(row[:regdate])
-  
+
   legislators = legislators_by_zipcode(zipcode)
 
   form_letter = form_letter_template.result(binding)
